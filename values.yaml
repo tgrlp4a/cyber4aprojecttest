@@ -1,0 +1,343 @@
+# Default values for jenkins.
+# This is a YAML-formatted file.
+# Declare name/value pairs to be passed into your templates.
+# name: value
+
+## Overrides for generated resource names
+# See templates/_helpers.tpl
+# nameOverride:
+# fullnameOverride:
+# namespaceOverride:
+
+# For FQDN resolving of the controller service. Change this value to match your existing configuration.
+# ref: https://github.com/kubernetes/dns/blob/master/docs/specification.md
+clusterZone: "cluster.local"
+
+renderHelmLabels: true
+
+controller:
+  # Used for label app.kubernetes.io/component
+  componentName: "jenkins-controller"
+  image:
+    registry: "docker.io"
+    repository: "jenkins/jenkins"
+    tag: "2.440.2-jdk17"
+  imagePullPolicy: "Always"
+  imagePullSecretName:
+  # Optionally configure lifetime for controller-container
+  lifecycle:
+  disableRememberMe: false
+  numExecutors: 0
+  # configures the executor mode of the Jenkins node. Possible values are: NORMAL or EXCLUSIVE
+  executorMode: "NORMAL"
+  markupFormatter: plainText
+  customJenkinsLabels: []
+  admin:
+    createSecret: true
+    username: "ServeurHardeningPreProd"
+    password: "S3rv3urH@rd3ningPr3Pr0d"
+  hostNetworking: false
+  existingSecret: ""
+  userKey: jenkins-admin-user
+  passwordKey: jenkins-admin-password
+  jenkinsHome: "/var/jenkins_home"
+  jenkinsRef: "/usr/share/jenkins/ref"
+  jenkinsWar: "/usr/share/jenkins/jenkins.war"
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+    limits:
+      cpu: "2000m"
+      memory: "4096Mi"
+  shareProcessNamespace: false
+  usePodSecurityContext: true
+  runAsUser: 1000
+  fsGroup: 1000
+  securityContextCapabilities: {}
+  containerSecurityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+  servicePort: 8080
+  targetPort: 8080
+  serviceType: NodePort
+  serviceExternalTrafficPolicy:
+  serviceAnnotations: {}
+  statefulSetLabels: {}
+  serviceLabels: {}
+  podLabels: {}
+  healthProbes: true
+  probes:
+    startupProbe:
+      httpGet:
+        path: '{{ default "" .Values.controller.jenkinsUriPrefix }}/login'
+        port: http
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 12
+    livenessProbe:
+      failureThreshold: 5
+      httpGet:
+        path: '{{ default "" .Values.controller.jenkinsUriPrefix }}/login'
+        port: http
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: '{{ default "" .Values.controller.jenkinsUriPrefix }}/login'
+        port: http
+      periodSeconds: 10
+      timeoutSeconds: 5
+  podDisruptionBudget:
+    enabled: false
+    apiVersion: "policy/v1beta1"
+  agentListenerEnabled: true
+  agentListenerPort: 50000
+  agentListenerHostPort:
+  agentListenerNodePort:
+  agentListenerExternalTrafficPolicy:
+  agentListenerLoadBalancerSourceRanges:
+  - 0.0.0.0/0
+  disabledAgentProtocols:
+    - JNLP-connect
+    - JNLP2-connect
+  csrf:
+    defaultCrumbIssuer:
+      enabled: true
+      proxyCompatability: true
+  agentListenerServiceType: "ClusterIP"
+  loadBalancerSourceRanges:
+  - 0.0.0.0/0
+  installPlugins:
+    - kubernetes:4203.v1dd44f5b_1cf9
+    - workflow-aggregator:596.v8c21c963d92d
+    - git:5.2.1
+    - configuration-as-code:1775.v810dc950b_514
+  installLatestPlugins: true
+  installLatestSpecifiedPlugins: false
+  additionalPlugins: []
+  initializeOnce: false
+  overwritePluginsFromImage: true
+  projectNamingStrategy: standard
+  enableRawHtmlMarkupFormatter: false
+  scriptApproval: []
+  initScripts: []
+  existingSecret:
+  additionalExistingSecrets: []
+  additionalSecrets: []
+  secretClaims: []
+  cloudName: "kubernetes"
+  JCasC:
+    defaultConfig: true
+    configUrls: []
+    configScripts: {}
+    security:
+      apiToken:
+        creationOfLegacyTokenEnabled: false
+        tokenGenerationOnCreationEnabled: false
+        usageStatisticsEnabled: true
+    securityRealm: |-
+      local:
+        allowsSignup: false
+        enableCaptcha: false
+        users:
+        - id: "${chart-admin-username}"
+          name: "Jenkins Admin"
+          password: "${chart-admin-password}"
+    authorizationStrategy: |-
+      loggedInUsersCanDoAnything:
+        allowAnonymousRead: false
+  customInitContainers: []
+  sidecars:
+    configAutoReload:
+      enabled: true
+      image:
+        registry: "docker.io"
+        repository: "kiwigrid/k8s-sidecar"
+        tag: "1.26.1"
+      imagePullPolicy: IfNotPresent
+      resources: {}
+      sshTcpPort: 1044
+      folder: "/var/jenkins_home/casc_configs"
+    additionalSidecarContainers: []
+  schedulerName: ""
+  nodeSelector: {}
+  terminationGracePeriodSeconds:
+  terminationMessagePath:
+  terminationMessagePolicy:
+  tolerations: []
+  affinity: {}
+  priorityClassName:
+  podAnnotations: {}
+  statefulSetAnnotations: {}
+  updateStrategy: {}
+  ingress:
+    enabled: false
+    paths: []
+    apiVersion: "extensions/v1beta1"
+    labels: {}
+    annotations: {}
+    hostName:
+    tls: []
+  secondaryingress:
+    enabled: false
+    paths: []
+    apiVersion: "extensions/v1beta1"
+    labels: {}
+    annotations: {}
+    hostName:
+    tls: []
+  backendconfig:
+    enabled: false
+    apiVersion: "extensions/v1beta1"
+    name:
+    labels: {}
+    annotations: {}
+    spec: {}
+  route:
+    enabled: false
+    labels: {}
+    annotations: {}
+  hostAliases: []
+  prometheus:
+    enabled: false
+    serviceMonitorAdditionalLabels: {}
+    scrapeInterval: 60s
+    scrapeEndpoint: /prometheus
+    alertingRulesAdditionalLabels: {}
+    alertingrules: []
+    prometheusRuleNamespace: ""
+    relabelings: []
+    metricRelabelings: []
+  googlePodMonitor:
+    enabled: false
+    scrapeInterval: 60s
+    scrapeEndpoint: /prometheus
+  testEnabled: true
+  httpsKeyStore:
+    jenkinsHttpsJksSecretName: ''
+    enable: false
+    disableSecretMount: false
+    httpPort: 8081
+    path: "/var/jenkins_keystore"
+    fileName: "keystore.jks"
+    password: "password"
+    jenkinsKeyStoreBase64Encoded: |
+      # Your keystore's base64 encoded data here
+
+agent:
+  enabled: true
+  defaultsProviderTemplate: ""
+  jenkinsUrl:
+  jenkinsTunnel:
+  kubernetesConnectTimeout: 5
+  kubernetesReadTimeout: 15
+  maxRequestsPerHostStr: "32"
+  namespace:
+  image:
+    repository: "jenkins/inbound-agent"
+    tag: "3206.vb_15dcf73f6a_9-3"
+  workingDir: "/home/jenkins/agent"
+  nodeUsageMode: "NORMAL"
+  customJenkinsLabels: []
+  imagePullSecretName:
+  componentName: "jenkins-agent"
+  websocket: false
+  directConnection: false
+  privileged: false
+  runAsUser:
+  runAsGroup:
+  hostNetworking: false
+  resources:
+    requests:
+      cpu: "512m"
+      memory: "512Mi"
+    limits:
+      cpu: "512m"
+      memory: "512Mi"
+  alwaysPullImage: false
+  podRetention: "Never"
+  showRawYaml: true
+  volumes: []
+  workspaceVolume: {}
+  envVars: []
+  secretEnvVars: []
+  nodeSelector: {}
+  command:
+  args: "${computer.jnlpmac} ${computer.name}"
+  sideContainerName: "jnlp"
+  TTYEnabled: false
+  containerCap: 10
+  podName: "default"
+  idleMinutes: 0
+  yamlTemplate: ""
+  yamlMergeStrategy: "override"
+  connectTimeout: 100
+  annotations: {}
+  additionalContainers: []
+  disableDefaultAgent: false
+  podTemplates: {}
+
+additionalAgents: {}
+
+persistence:
+  enabled: true
+  existingClaim:
+  storageClass:
+  annotations: {}
+  labels: {}
+  accessMode: "ReadWriteOnce"
+  size: "8Gi"
+  volumes: []
+  mounts: []
+
+networkPolicy:
+  enabled: false
+  apiVersion: networking.k8s.io/v1
+  internalAgents:
+    allowed: true
+    podLabels: {}
+    namespaceLabels: {}
+  externalAgents: {}
+
+rbac:
+  create: true
+  readSecrets: false
+
+serviceAccount:
+  create: false
+  name: jenkins
+  annotations: {}
+  extraLabels: {}
+  imagePullSecretName:
+
+serviceAccountAgent:
+  create: false
+  name:
+  annotations: {}
+  extraLabels: {}
+  imagePullSecretName:
+
+cronJob:
+  apiVersion: batch/v1
+
+checkDeprecation: true
+
+awsSecurityGroupPolicies:
+  enabled: false
+  policies:
+    - name: ""
+      securityGroupIds: []
+      podSelector: {}
+
+helmtest:
+  bats:
+    image:
+      registry: ""
+      repository: "bats/bats"
+      tag: "1.10.0"
+
+# This marks the end of the YAML configuration
