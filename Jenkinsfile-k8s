@@ -37,5 +37,11 @@ pipeline {
         }
       }
     }
+
+    stage('Scan Image for Vulnerabilities') {
+        steps {
+            sh 'trivy image --no-progress ${IMAGE_NAME}:${IMAGE_TAG}'
+        }
+    }
   }
 }
