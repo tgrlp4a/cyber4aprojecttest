@@ -37,20 +37,5 @@ pipeline {
         }
       }
     }
-
-   // stage('Scan Image for Vulnerabilities') {
-   //     steps {
-   //         sh 'trivy image --no-progress ${IMAGE_NAME}:${IMAGE_TAG}'
-   //     }
-   // }
-
-    stage('Deploy to Kubernetes') {
-      steps {
-        script {
-          // Appliquer le fichier de déploiement à Kubernetes
-          sh 'kubectl apply -f deployment.yaml'
-        }
-      }
-    }
   }
 }
