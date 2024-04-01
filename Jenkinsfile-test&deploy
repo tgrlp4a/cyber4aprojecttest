@@ -22,13 +22,17 @@ pipeline {
       }
     }
 
-    stage("Vulnerability Scan") {
+stage('Scan Image with Trivy') {
       steps {
         script {
-          // Assurez-vous d'avoir Trivy installé dans l'environnement où ce pipeline est exécuté
-          sh "trivy image --format template --template '@trivy.tpl' -o trivy-report.txt ${IMAGE_NAME}:${IMAGE_TAG}"
-          archiveArtifacts artifacts: 'trivy-report.txt', onlyIfSuccessful: true
+          sh "trivy image ${IMAGE_NAME}:${IMAGE_TAG} > trivy-report.txt"
         }
+      }
+    }
+    
+    stage('Archive Trivy Report') {
+      steps {
+        archiveArtifacts artifacts: 'trivy-report.txt', onlyIfSuccessful: true
       }
     }
 
