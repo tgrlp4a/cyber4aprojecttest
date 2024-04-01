@@ -2,28 +2,37 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_NAME = "theogrlp4a/cyber4aprojecttest"
+    APP_NAME = "cyber4aprojecttest"
+    DOCKER_USER = "theogrlp4a"
+    DOCKER_PASS = credentials('docker-hub-credentials') // Utiliser Jenkins credentials store
+    IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
     IMAGE_TAG = "latest"
   }
 
   stages {
-    stage('Pull Docker Image') {
+    stage("Setup & Pull Image") {
       steps {
         script {
-          sh "docker pull ${IMAGE_NAME}:${IMAGE_TAG}"
+          withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+            sh "echo $PASS | docker login --username $USER --password-stdin"
+            sh "docker pull ${IMAGE_NAME}:${IMAGE_TAG}"
+            sh "docker logout"
+          }
         }
       }
     }
 
-    stage('Vulnerability Scan with Trivy') {
+    stage("Vulnerability Scan") {
       steps {
         script {
+          // Assurez-vous d'avoir Trivy installé dans l'environnement où ce pipeline est exécuté
           sh "trivy image --format template --template '@trivy.tpl' -o trivy-report.txt ${IMAGE_NAME}:${IMAGE_TAG}"
+          archiveArtifacts artifacts: 'trivy-report.txt', onlyIfSuccessful: true
         }
       }
     }
 
-    stage('Deploy Container') {
+    stage("Deploy Container") {
       steps {
         script {
           sh "docker run -d --name my_app_container ${IMAGE_NAME}:${IMAGE_TAG}"
@@ -34,7 +43,6 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: 'trivy-report.txt', onlyIfSuccessful: true
       cleanWs()
     }
   }
