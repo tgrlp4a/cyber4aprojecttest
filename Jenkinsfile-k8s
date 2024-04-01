@@ -16,25 +16,22 @@ pipeline {
   }
 
   stages {
-
     stage("Cleanup Workspace") {
       steps {
         cleanWs()
       }
     }
 
-    stage("Checkout from SCM"){
-            steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/tgrlp4a/cyber4aprojecttest.git'
-            }
-
-        }
+    stage("Checkout from SCM") {
+      steps {
+        git branch: 'main', credentialsId: 'github', url: 'https://github.com/tgrlp4a/cyber4aprojecttest.git'
+      }
+    }
 
     stage('Build & Push with Kaniko') {
       steps {
         container(name: 'kaniko', shell: '/busybox/sh') {
           sh '''#!/busybox/sh
-
             /kaniko/executor --dockerfile `pwd`/Dockerfile --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG} --destination=${IMAGE_NAME}:latest
           '''
         }
