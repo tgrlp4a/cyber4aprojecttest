@@ -1,0 +1,41 @@
+pipeline {
+  agent any
+
+  environment {
+    IMAGE_NAME = "theogrlp4a/cyber4aprojecttest"
+    IMAGE_TAG = "lates
+  }
+
+  stages {
+    stage('Pull Docker Image') {
+      steps {
+        script {
+          sh "docker pull ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+      }
+    }
+
+    stage('Vulnerability Scan with Trivy') {
+      steps {
+        script {
+          sh "trivy image --format template --template '@trivy.tpl' -o trivy-report.txt ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+      }
+    }
+
+    stage('Deploy Container') {
+      steps {
+        script {
+          sh "docker run -d --name my_app_container ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'trivy-report.txt', onlyIfSuccessful: true
+      cleanWs()
+    }
+  }
+}
