@@ -12,7 +12,6 @@ pipeline {
     DOCKER_PASS = 'S3rv3urH@rd3ningPr3Pr0d'
     IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
     IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-    /* JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN") */
   }
 
   stages {
@@ -22,7 +21,7 @@ pipeline {
       }
     }
 
-    stage("Checkout from SCM") {
+    stage("Checkout from SCM"){
       steps {
         git branch: 'main', credentialsId: 'github', url: 'https://github.com/tgrlp4a/cyber4aprojecttest.git'
       }
@@ -31,8 +30,9 @@ pipeline {
     stage('Build & Push with Kaniko') {
       steps {
         container(name: 'kaniko', shell: '/busybox/sh') {
-          sh '''#!/busybox/sh
-            /kaniko/executor --dockerfile `pwd`/Dockerfile --context `pwd` --destination=${IMAGE_NAME}:${IMAGE_TAG} --destination=${IMAGE_NAME}:latest
+          sh '''
+            #!/busybox/sh
+            /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest"
           '''
         }
       }
