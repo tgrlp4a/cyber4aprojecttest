@@ -8,7 +8,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Étape 2: Préparer l'image distroless pour exécuter Nginx
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/cc-debian12
 
 # Copier l'exécutable Nginx et les fichiers nécessaires
 COPY --from=build /usr/sbin/nginx /usr/sbin/nginx
