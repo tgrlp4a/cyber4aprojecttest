@@ -20,7 +20,7 @@ COPY --from=build /var/www/html /var/www/html
 COPY ./static /var/www/html
 
 # (Optionnel) Copier la configuration Nginx personnalisée si nécessaire
-COPY ./nginx.conf /etc/nginx/nginx.conf
+COPY ./conf/nginx.conf /etc/nginx/nginx.conf
 
 # Exposer le port sur lequel Nginx écoute
 EXPOSE 80
