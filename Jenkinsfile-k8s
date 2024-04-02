@@ -8,6 +8,9 @@ pipeline {
   environment {
     APP_NAME = "cyber4aprojecttest"
     RELEASE = "1.0.0"
+    DOCKER_USER = "theogrlp4a"
+    DOCKER_PASS = 'S3rv3urH@rd3ningPr3Pr0d'
+    IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
     IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
   }
 
@@ -26,15 +29,11 @@ pipeline {
 
     stage('Build & Push with Kaniko') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-          script {
-            // Construction de IMAGE_NAME ici avec DOCKER_USER récupéré des credentials
-            def IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
-            sh '''
-              #!/busybox/sh
-              /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest"
-            '''
-          }
+        container(name: 'kaniko', shell: '/busybox/sh') {
+          sh '''
+            #!/busybox/sh
+            /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest"
+          '''
         }
       }
     }
