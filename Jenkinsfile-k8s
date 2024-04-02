@@ -8,8 +8,7 @@ pipeline {
   environment {
     APP_NAME = "cyber4aprojecttest"
     RELEASE = "1.0.0"
-    DOCKER_USER = "theogrlp4a"
-    DOCKER_PASS = 'S3rv3urH@rd3ningPr3Pr0d'
+    DOCKER_CREDENTIALS = credentials('docker-hub-credentials')
     IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
     IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
   }
