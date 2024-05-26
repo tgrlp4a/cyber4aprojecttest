@@ -1,11 +1,16 @@
 # Étape 1: Construire Nginx dans une image Debian intermédiaire
 FROM debian:buster as build
 
-# Installer Nginx et nettoyer après installation pour garder l'image légère
+# Installer Nginx, dépendances Wazuh et Wazuh, puis nettoyer après installation pour garder l'image légère
 RUN apt-get update && \
-    apt-get install -y nginx && \
+    apt-get install -y nginx wget lsb-release && \
+    wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb && \
+    dpkg -i wazuh-agent_4.7.3-1_amd64.deb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+
+# Configurer le manager Wazuh
+RUN sed -i 's/<address>MANAGER_ADDRESS<\/address>/<address>192.168.9.11<\/address>/' /var/ossec/etc/ossec.conf
 
 # Créer les répertoires nécessaires et ajuster les permissions
 RUN mkdir -p /var/lib/nginx/body && \
@@ -45,7 +50,9 @@ COPY ./static /var/www/html
 # Copier la configuration Nginx personnalisée
 COPY ./conf/nginx.conf /etc/nginx/nginx.conf
 
-# Copier les bibliothèques nécessaires
+# Copier l'agent Wazuh et ses bibliothèques
+COPY --from=build /var/ossec /var/ossec
+COPY --from=build /etc/init.d/wazuh-agent /etc/init.d/wazuh-agent
 COPY --from=build /lib/x86_64-linux-gnu/libcrypt.so.1 /lib/x86_64-linux-gnu/libcrypt.so.1
 COPY --from=build /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
 COPY --from=build /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
