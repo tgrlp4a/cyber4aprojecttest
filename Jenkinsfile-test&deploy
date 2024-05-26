@@ -22,7 +22,7 @@ pipeline {
       }
     }
 
-stage('Scan Image with Trivy') {
+    stage('Scan Image with Trivy') {
       steps {
         script {
           sh "trivy image ${IMAGE_NAME}:${IMAGE_TAG} > trivy-report.txt"
@@ -39,7 +39,14 @@ stage('Scan Image with Trivy') {
     stage("Deploy Container") {
       steps {
         script {
-          sh "docker run -d --name my_app_container ${IMAGE_NAME}:${IMAGE_TAG}"
+          // Vérifier si le conteneur existe déjà et le supprimer s'il existe
+          def containerExists = sh(script: "docker ps -a --format '{{.Names}}' | grep my_app_container || true", returnStdout: true).trim()
+          if (containerExists) {
+            sh "docker stop my_app_container"
+            sh "docker rm my_app_container"
+          }
+          // Déployer le nouveau conteneur
+          sh "docker run -d --name my_app_container -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}"
         }
       }
     }
