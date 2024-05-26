@@ -7,6 +7,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
+# Vérifier les dépendances de Nginx
+RUN ldd /usr/sbin/nginx
+
 # Étape 2: Préparer l'image distroless pour exécuter Nginx
 FROM gcr.io/distroless/cc-debian12
 
