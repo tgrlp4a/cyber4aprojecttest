@@ -58,9 +58,6 @@ COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.
 COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libgcc_s.so.1
 COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
-# Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
-RUN chown -R wazuh:wazuh /var/ossec && chmod +x /etc/init.d/wazuh-agent
-
 # Copier le script de démarrage
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
