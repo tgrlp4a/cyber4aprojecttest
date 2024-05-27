@@ -90,3 +90,6 @@ EXPOSE 80
 
 # Définir le point d'entrée
 ENTRYPOINT ["/usr/local/bin/start.sh"]
+
+# Commande par défaut
+CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
