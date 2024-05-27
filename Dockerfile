@@ -15,24 +15,24 @@ RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Créer les répertoires nécessaires et ajuster les permissions
-RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/proxy /var/lib/nginx/fastcgi /var/lib/nginx/uwsgi /var/lib/nginx/scgi /var/log/nginx /var/run/nginx && \
-    chown -R www-data:www-data /var/lib/nginx /var/log/nginx /var/run/nginx /var/www/html
+RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/proxy /var/lib/nginx/fastcgi /var/lib/nginx/uwsgi /var/lib/nginx/scgi /var/log/nginx /var/run/nginx
+RUN chown -R www-data:www-data /var/lib/nginx /var/log/nginx /var/run/nginx /var/www/html
 
 # Créer le fichier PID avec les bonnes permissions
-RUN touch /var/run/nginx.pid && \
-    chown www-data:www-data /var/run/nginx.pid
+RUN touch /var/run/nginx.pid
+RUN chown www-data:www-data /var/run/nginx.pid
 
 # Vérifier les dépendances de Nginx
 RUN ldd /usr/sbin/nginx
 
 # Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
-RUN groupadd -r wazuh || true && \
-    useradd -r -g wazuh wazuh || true
+RUN groupadd -r wazuh || echo "group wazuh already exists"
+RUN useradd -r -g wazuh wazuh || echo "user wazuh already exists"
 
 # Ajuster les permissions des fichiers Wazuh
-RUN chmod -R 755 /var/ossec && \
-    chmod +x /etc/init.d/wazuh-agent && \
-    chown -R wazuh:wazuh /var/ossec
+RUN chmod -R 755 /var/ossec
+RUN chmod +x /etc/init.d/wazuh-agent
+RUN chown -R wazuh:wazuh /var/ossec
 
 # Étape 2: Préparer l'image finale basée sur Debian
 FROM debian:buster-slim
@@ -72,8 +72,8 @@ COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libg
 COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
 # Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
-RUN groupadd -r wazuh || true && \
-    useradd -r -g wazuh wazuh || true
+RUN groupadd -r wazuh || echo "group wazuh already exists"
+RUN useradd -r -g wazuh wazuh || echo "user wazuh already exists"
 
 # Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
 RUN chown -R wazuh:wazuh /var/ossec && \
