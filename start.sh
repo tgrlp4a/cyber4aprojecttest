@@ -2,7 +2,7 @@
 
 # Start Nginx
 echo "Starting Nginx..."
-/usr/sbin/nginx -g 'daemon off;'s
+/usr/sbin/nginx -g 'daemon off;'
 
 # Start Wazuh agent
 echo "Starting Wazuh agent..."
