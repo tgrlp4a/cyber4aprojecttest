@@ -21,7 +21,7 @@ pipeline {
       }
     }
 
-    stage("Checkout from SCM"){
+    stage("Checkout from SCM") {
       steps {
         git branch: 'main', credentialsId: 'github', url: 'https://github.com/tgrlp4a/cyber4aprojecttest.git'
       }
@@ -32,8 +32,7 @@ pipeline {
         container(name: 'kaniko', shell: '/busybox/sh') {
           sh '''
             #!/busybox/sh
-            /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest" --cleanup
-            mkdir -p /workspace
+            /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest"
           '''
         }
       }
