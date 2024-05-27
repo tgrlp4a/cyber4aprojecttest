@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Start Nginx
+echo "Starting Nginx..."
+/usr/sbin/nginx -g 'daemon off;'s
+
 # Start Wazuh agent
 echo "Starting Wazuh agent..."
 /etc/init.d/wazuh-agent start
@@ -16,7 +20,3 @@ fi
 
 # Tail Wazuh logs in the background
 tail -f /var/ossec/logs/ossec.log &
-
-# Start Nginx
-echo "Starting Nginx..."
-/usr/sbin/nginx -g 'daemon off;'
