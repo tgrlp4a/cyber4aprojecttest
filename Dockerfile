@@ -10,21 +10,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Créer les répertoires nécessaires et ajuster les permissions
-RUN mkdir -p /var/lib/nginx/body && \
-    mkdir -p /var/lib/nginx/proxy && \
-    mkdir -p /var/lib/nginx/fastcgi && \
-    mkdir -p /var/lib/nginx/uwsgi && \
-    mkdir -p /var/lib/nginx/scgi && \
-    mkdir -p /var/log/nginx && \
-    mkdir -p /var/run/nginx && \
-    chown -R www-data:www-data /var/lib/nginx && \
-    chown -R www-data:www-data /var/log/nginx && \
-    chown -R www-data:www-data /var/run/nginx && \
-    chown -R www-data:www-data /var/www/html
+RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/proxy /var/lib/nginx/fastcgi /var/lib/nginx/uwsgi /var/lib/nginx/scgi /var/log/nginx /var/run/nginx /var/www/html && \
+    chown -R www-data:www-data /var/lib/nginx /var/log/nginx /var/run/nginx /var/www/html
 
 # Créer le fichier PID avec les bonnes permissions
-RUN touch /var/run/nginx.pid && \
-    chown www-data:www-data /var/run/nginx.pid
+RUN touch /var/run/nginx.pid && chown www-data:www-data /var/run/nginx.pid
 
 # Vérifier les dépendances de Nginx
 RUN ldd /usr/sbin/nginx
@@ -33,9 +23,7 @@ RUN ldd /usr/sbin/nginx
 RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true
 
 # Ajuster les permissions des fichiers Wazuh
-RUN chmod -R 755 /var/ossec && \
-    chmod +x /etc/init.d/wazuh-agent && \
-    chown -R wazuh:wazuh /var/ossec
+RUN chmod -R 755 /var/ossec && chmod +x /etc/init.d/wazuh-agent && chown -R wazuh:wazuh /var/ossec
 
 # Étape 2: Préparer l'image finale basée sur Debian
 FROM debian:buster-slim
@@ -74,9 +62,7 @@ COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libg
 COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
 # Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
-RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true && \
-    chown -R wazuh:wazuh /var/ossec && \
-    chmod +x /etc/init.d/wazuh-agent
+RUN chown -R wazuh:wazuh /var/ossec && chmod +x /etc/init.d/wazuh-agent
 
 # Copier le script de démarrage
 COPY start.sh /usr/local/bin/start.sh
