@@ -7,7 +7,7 @@ pipeline {
     DOCKER_PASS = credentials('docker-hub-credentials') // Utiliser Jenkins credentials store
     IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
     IMAGE_TAG = "latest"
-    GITHUB_REPO = "https://github.com/votre-utilisateur/votre-repo.git"
+    GITHUB_REPO = "https://github.com/tgrlp4a/cyber4aprojecttest.git"
   }
 
   stages {
