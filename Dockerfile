@@ -3,14 +3,11 @@ FROM debian:buster as build
 
 # Installer Nginx, dépendances Wazuh et Wazuh, puis nettoyer après installation pour garder l'image légère
 RUN apt-get update && \
-    apt-get install -y nginx wget lsb-release && \
+    apt-get install -y nginx wget lsb-release procps && \
     wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb && \
-    dpkg -i wazuh-agent_4.7.3-1_amd64.deb && \
+    WAZUH_MANAGER='192.168.9.11' dpkg -i ./wazuh-agent_4.7.3-1_amd64.deb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
-
-# Configurer le manager Wazuh
-RUN sed -i 's/<address>MANAGER_ADDRESS<\/address>/<address>192.168.9.11<\/address>/' /var/ossec/etc/ossec.conf
 
 # Créer les répertoires nécessaires et ajuster les permissions
 RUN mkdir -p /var/lib/nginx/body && \
@@ -20,22 +17,33 @@ RUN mkdir -p /var/lib/nginx/body && \
     mkdir -p /var/lib/nginx/scgi && \
     mkdir -p /var/log/nginx && \
     mkdir -p /var/run/nginx && \
-    chown -R 65532:65532 /var/lib/nginx && \
-    chown -R 65532:65532 /var/log/nginx && \
-    chown -R 65532:65532 /var/run/nginx && \
-    chown -R 65532:65532 /var/www/html
+    chown -R www-data:www-data /var/lib/nginx && \
+    chown -R www-data:www-data /var/log/nginx && \
+    chown -R www-data:www-data /var/run/nginx && \
+    chown -R www-data:www-data /var/www/html
 
 # Créer le fichier PID avec les bonnes permissions
 RUN touch /var/run/nginx.pid && \
-    chown 65532:65532 /var/run/nginx.pid
+    chown www-data:www-data /var/run/nginx.pid
 
 # Vérifier les dépendances de Nginx
 RUN ldd /usr/sbin/nginx
 
-# Étape 2: Préparer l'image distroless pour exécuter Nginx
-FROM gcr.io/distroless/cc-debian12
+# Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
+RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true
 
-# Copier l'exécutable Nginx et les fichiers nécessaires
+# Ajuster les permissions des fichiers Wazuh
+RUN chmod -R 755 /var/ossec && \
+    chmod +x /etc/init.d/wazuh-agent && \
+    chown -R wazuh:wazuh /var/ossec
+
+# Étape 2: Préparer l'image finale basée sur Debian
+FROM debian:buster-slim
+
+# Installer les dépendances nécessaires
+RUN apt-get update && apt-get install -y procps
+
+# Copier l'exécutable Nginx et les fichiers nécessaires depuis l'image de build
 COPY --from=build /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=build /etc/nginx /etc/nginx
 COPY --from=build /var/log/nginx /var/log/nginx
@@ -65,11 +73,23 @@ COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.
 COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libgcc_s.so.1
 COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
-# Changer l'utilisateur de l'image Docker pour nonroot
-USER nonroot
+# Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
+RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true && \
+    chown -R wazuh:wazuh /var/ossec && \
+    chmod +x /etc/init.d/wazuh-agent
+
+# Copier le script de démarrage
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+# Utiliser root pour exécution initiale
+USER root
 
 # Exposer le port sur lequel Nginx écoute
 EXPOSE 80
 
-# Utiliser un tableau pour CMD car distroless n'a pas de shell
+# Définir le point d'entrée
+ENTRYPOINT ["/usr/local/bin/start.sh"]
+
+# Commande par défaut
 CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
