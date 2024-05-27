@@ -1,13 +1,17 @@
 # Étape 1: Construire Nginx dans une image Debian intermédiaire
 FROM debian:buster as build
 
-# Installer Nginx, dépendances Wazuh et Wazuh, puis nettoyer après installation pour garder l'image légère
-RUN apt-get update
-RUN apt-get install -y nginx wget lsb-release procps
-RUN wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb
-RUN WAZUH_MANAGER='192.168.9.11' dpkg -i ./wazuh-agent_4.7.3-1_amd64.deb
-RUN apt-get clean
-RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+# Installer Nginx, dépendances Wazuh et Wazuh
+RUN apt-get update && \
+    apt-get install -y nginx wget lsb-release procps
+
+# Télécharger et installer l'agent Wazuh
+RUN wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb && \
+    WAZUH_MANAGER='192.168.9.11' dpkg -i /wazuh-agent_4.7.3-1_amd64.deb
+
+# Nettoyer après installation pour garder l'image légère
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Créer les répertoires nécessaires et ajuster les permissions
 RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/proxy /var/lib/nginx/fastcgi /var/lib/nginx/uwsgi /var/lib/nginx/scgi /var/log/nginx /var/run/nginx
@@ -65,9 +69,11 @@ COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.
 COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libgcc_s.so.1
 COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
-# Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
+# Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
 RUN groupadd -r wazuh || true
 RUN useradd -r -g wazuh wazuh || true
+
+# Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
 RUN chown -R wazuh:wazuh /var/ossec
 RUN chmod +x /etc/init.d/wazuh-agent
 
