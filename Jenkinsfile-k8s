@@ -27,12 +27,12 @@ pipeline {
       }
     }
 
-    stage('Build & Push with Kaniko') {
+        stage('Build & Push with Kaniko') {
       steps {
         container(name: 'kaniko', shell: '/busybox/sh') {
           sh '''
             #!/busybox/sh
-            /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest"
+            /kaniko/executor --dockerfile Dockerfile --context . --destination="${IMAGE_NAME}:${IMAGE_TAG}" --destination="${IMAGE_NAME}:latest" --cleanup
           '''
         }
       }
