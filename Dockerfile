@@ -1,25 +1,26 @@
 # Étape 1: Construire Nginx dans une image Debian intermédiaire
 FROM debian:buster as build
 
-# Installer Nginx, dépendances Wazuh et Wazuh
+# Installer Nginx, dépendances Wazuh et Wazuh, puis nettoyer après installation pour garder l'image légère
 RUN apt-get update && \
-    apt-get install -y nginx wget lsb-release procps
-
-# Télécharger et installer l'agent Wazuh
-RUN wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb -O /wazuh-agent_4.7.3-1_amd64.deb && \
-    WAZUH_MANAGER='192.168.9.11' dpkg -i /wazuh-agent_4.7.3-1_amd64.deb && \
-    rm /wazuh-agent_4.7.3-1_amd64.deb
-
-# Nettoyer après installation pour garder l'image légère
-RUN apt-get clean && \
+    apt-get install -y nginx wget lsb-release procps && \
+    wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb && \
+    WAZUH_MANAGER='192.168.9.11' dpkg -i ./wazuh-agent_4.7.3-1_amd64.deb && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
-# Supprimer les liens symboliques potentiellement problématiques
-RUN find / -type l -delete
-
 # Créer les répertoires nécessaires et ajuster les permissions
-RUN mkdir -p /var/lib/nginx/body /var/lib/nginx/proxy /var/lib/nginx/fastcgi /var/lib/nginx/uwsgi /var/lib/nginx/scgi /var/log/nginx /var/run/nginx && \
-    chown -R www-data:www-data /var/lib/nginx /var/log/nginx /var/run/nginx /var/www/html
+RUN mkdir -p /var/lib/nginx/body && \
+    mkdir -p /var/lib/nginx/proxy && \
+    mkdir -p /var/lib/nginx/fastcgi && \
+    mkdir -p /var/lib/nginx/uwsgi && \
+    mkdir -p /var/lib/nginx/scgi && \
+    mkdir -p /var/log/nginx && \
+    mkdir -p /var/run/nginx && \
+    chown -R www-data:www-data /var/lib/nginx && \
+    chown -R www-data:www-data /var/log/nginx && \
+    chown -R www-data:www-data /var/run/nginx && \
+    chown -R www-data:www-data /var/www/html
 
 # Créer le fichier PID avec les bonnes permissions
 RUN touch /var/run/nginx.pid && \
@@ -29,8 +30,7 @@ RUN touch /var/run/nginx.pid && \
 RUN ldd /usr/sbin/nginx
 
 # Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
-RUN /usr/sbin/groupadd -r wazuh || echo "group wazuh already exists"
-RUN /usr/sbin/useradd -r -g wazuh wazuh || echo "user wazuh already exists"
+RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true
 
 # Ajuster les permissions des fichiers Wazuh
 RUN chmod -R 755 /var/ossec && \
@@ -41,8 +41,7 @@ RUN chmod -R 755 /var/ossec && \
 FROM debian:buster-slim
 
 # Installer les dépendances nécessaires
-RUN apt-get update && apt-get install -y procps && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y procps
 
 # Copier l'exécutable Nginx et les fichiers nécessaires depuis l'image de build
 COPY --from=build /usr/sbin/nginx /usr/sbin/nginx
@@ -74,16 +73,13 @@ COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.
 COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libgcc_s.so.1
 COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
 
-# Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
-RUN /usr/sbin/groupadd -r wazuh || echo "group wazuh already exists"
-RUN /usr/sbin/useradd -r -g wazuh wazuh || echo "user wazuh already exists"
-
 # Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
-RUN chown -R wazuh:wazuh /var/ossec && \
+RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true && \
+    chown -R wazuh:wazuh /var/ossec && \
     chmod +x /etc/init.d/wazuh-agent
 
 # Copier le script de démarrage
-COPY /start.sh /usr/local/bin/start.sh
+COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
 # Utiliser root pour exécution initiale
