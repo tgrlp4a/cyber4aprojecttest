@@ -1,11 +1,14 @@
-# Étape 1: Construire Nginx dans une image Debian intermédiaire
-FROM debian:buster as build
+FROM debian:buster-slim
 
-# Installer Nginx, dépendances Wazuh, Wazuh et autres utilitaires, puis nettoyer après installation pour garder l'image légère
-RUN apt-get update && \
-    apt-get install -y nginx wget lsb-release procps curl libcap2-bin net-tools psmisc && \
+# Installer les dépendances nécessaires, Nginx, Wazuh, Elastic Agent, et autres utilitaires
+RUN apt-get update && apt-get install -y \
+    nginx wget lsb-release procps curl libcap2-bin net-tools psmisc && \
     wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb && \
     WAZUH_MANAGER='192.168.9.11' dpkg -i ./wazuh-agent_4.7.3-1_amd64.deb && \
+    curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-8.12.2-linux-x86_64.tar.gz && \
+    tar xzvf elastic-agent-8.12.2-linux-x86_64.tar.gz && \
+    mv elastic-agent-8.12.2-linux-x86_64 /usr/share/elastic-agent && \
+    rm elastic-agent-8.12.2-linux-x86_64.tar.gz && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
@@ -20,77 +23,22 @@ RUN mkdir -p /var/lib/nginx/body && \
     chown -R www-data:www-data /var/lib/nginx && \
     chown -R www-data:www-data /var/log/nginx && \
     chown -R www-data:www-data /var/run/nginx && \
-    chown -R www-data:www-data /var/www/html
-
-# Créer le fichier PID avec les bonnes permissions
-RUN touch /var/run/nginx.pid && \
-    chown www-data:www-data /var/run/nginx.pid
-
-# Vérifier les dépendances de Nginx
-RUN ldd /usr/sbin/nginx
-
-# Ajouter un utilisateur et un groupe wazuh si ils n'existent pas déjà
-RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true
-
-# Ajuster les permissions des fichiers Wazuh
-RUN chmod -R 755 /var/ossec && \
+    chown -R www-data:www-data /var/www/html && \
+    touch /var/run/nginx.pid && \
+    chown www-data:www-data /var/run/nginx.pid && \
+    groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true && \
+    chmod -R 755 /var/ossec && \
     chmod +x /etc/init.d/wazuh-agent && \
-    chown -R wazuh:wazuh /var/ossec
-
-# Télécharger et installer Elastic Agent depuis un fichier tar.gz
-RUN curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-8.12.2-linux-x86_64.tar.gz && \
-    tar xzvf elastic-agent-8.12.2-linux-x86_64.tar.gz && \
-    mv elastic-agent-8.12.2-linux-x86_64 /usr/share/elastic-agent && \
-    rm elastic-agent-8.12.2-linux-x86_64.tar.gz
-
-# Créer le répertoire pour la socket Unix et ajuster les permissions
-RUN mkdir -p /usr/share/elastic-agent/data/tmp && \
+    chown -R wazuh:wazuh /var/ossec && \
+    mkdir -p /usr/share/elastic-agent/data/tmp && \
     chown -R root:root /usr/share/elastic-agent && \
     chmod -R 755 /usr/share/elastic-agent
-
-# Étape 2: Préparer l'image finale basée sur Debian
-FROM debian:buster-slim
-
-# Installer les dépendances nécessaires
-RUN apt-get update && apt-get install -y procps net-tools psmisc
-
-# Copier l'exécutable Nginx et les fichiers nécessaires depuis l'image de build
-COPY --from=build /usr/sbin/nginx /usr/sbin/nginx
-COPY --from=build /etc/nginx /etc/nginx
-COPY --from=build /var/log/nginx /var/log/nginx
-COPY --from=build /var/lib/nginx /var/lib/nginx
-COPY --from=build /var/run/nginx /var/run/nginx
-COPY --from=build /var/run/nginx.pid /var/run/nginx.pid
-COPY --from=build /var/www/html /var/www/html
 
 # Copier les fichiers statiques de votre site dans le conteneur
 COPY ./static /var/www/html
 
 # Copier la configuration Nginx personnalisée
 COPY ./conf/nginx.conf /etc/nginx/nginx.conf
-
-# Copier l'agent Wazuh et ses bibliothèques
-COPY --from=build /var/ossec /var/ossec
-COPY --from=build /etc/init.d/wazuh-agent /etc/init.d/wazuh-agent
-COPY --from=build /lib/x86_64-linux-gnu/libcrypt.so.1 /lib/x86_64-linux-gnu/libcrypt.so.1
-COPY --from=build /lib/x86_64-linux-gnu/libc.so.6 /lib/x86_64-linux-gnu/libc.so.6
-COPY --from=build /lib/x86_64-linux-gnu/libpthread.so.0 /lib/x86_64-linux-gnu/libpthread.so.0
-COPY --from=build /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so.2
-COPY --from=build /lib/x86_64-linux-gnu/libpcre.so.3 /lib/x86_64-linux-gnu/libpcre.so.3
-COPY --from=build /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.1
-COPY --from=build /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
-COPY --from=build /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
-COPY --from=build /lib/x86_64-linux-gnu/libm.so.6 /lib/x86_64-linux-gnu/libm.so.6
-COPY --from=build /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/x86_64-linux-gnu/libgcc_s.so.1
-COPY --from=build /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
-
-# Copier Elastic Agent
-COPY --from=build /usr/share/elastic-agent /usr/share/elastic-agent
-
-# Ajuster les permissions des fichiers Wazuh et démarrer le service Wazuh
-RUN groupadd -r wazuh || true && useradd -r -g wazuh wazuh || true && \
-    chown -R wazuh:wazuh /var/ossec && \
-    chmod +x /etc/init.d/wazuh-agent
 
 # Copier le script de démarrage
 COPY start.sh /usr/local/bin/start.sh
