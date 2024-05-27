@@ -7,15 +7,22 @@ pipeline {
     DOCKER_PASS = credentials('docker-hub-credentials') // Utiliser Jenkins credentials store
     IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
     IMAGE_TAG = "latest"
+    GITHUB_REPO = "https://github.com/votre-utilisateur/votre-repo.git"
   }
 
   stages {
-    stage("Setup & Pull Image") {
+    stage('Clone Repository') {
+      steps {
+        git branch: 'main', url: "${GITHUB_REPO}"
+      }
+    }
+    
+    stage('Build Docker Image') {
       steps {
         script {
           withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
             sh "echo $PASS | docker login --username $USER --password-stdin"
-            sh "docker pull ${IMAGE_NAME}:${IMAGE_TAG}"
+            sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             sh "docker logout"
           }
         }
