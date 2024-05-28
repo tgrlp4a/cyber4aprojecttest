@@ -1,8 +1,8 @@
 FROM debian:buster-slim
 
-# Installer les dépendances nécessaires, Nginx, Wazuh, Elastic Agent, et autres utilitaires
+# Installer les dépendances nécessaires, Nginx, Wazuh, Elastic Agent, Node Exporter, et autres utilitaires
 RUN apt-get update && apt-get install -y \
-    nginx wget lsb-release procps curl libcap2-bin net-tools psmisc && \
+    nginx wget lsb-release procps curl libcap2-bin net-tools psmisc tar dbus && \
     wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.3-1_amd64.deb && \
     WAZUH_MANAGER='192.168.9.11' dpkg -i ./wazuh-agent_4.7.3-1_amd64.deb && \
     curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-8.12.2-linux-x86_64.tar.gz && \
@@ -10,7 +10,12 @@ RUN apt-get update && apt-get install -y \
     mv elastic-agent-8.12.2-linux-x86_64 /usr/share/elastic-agent && \
     rm elastic-agent-8.12.2-linux-x86_64.tar.gz && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* && \
+    useradd --system --no-create-home --shell /bin/false node_exporter && \
+    wget https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz && \
+    tar -xvf node_exporter-1.3.1.linux-amd64.tar.gz && \
+    mv node_exporter-1.3.1.linux-amd64/node_exporter /usr/local/bin/ && \
+    rm -rf node_exporter-1.3.1.linux-amd64 node_exporter-1.3.1.linux-amd64.tar.gz
 
 # Créer les répertoires nécessaires et ajuster les permissions
 RUN mkdir -p /var/lib/nginx/body && \
@@ -47,8 +52,8 @@ RUN chmod +x /usr/local/bin/start.sh
 # Utiliser root pour exécution initiale
 USER root
 
-# Exposer le port sur lequel Nginx écoute
-EXPOSE 80
+# Exposer les ports sur lesquels Nginx et Node Exporter écoutent
+EXPOSE 80 9100
 
 # Définir le point d'entrée
 ENTRYPOINT ["/usr/local/bin/start.sh"]
