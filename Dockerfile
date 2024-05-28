@@ -52,8 +52,8 @@ RUN chmod +x /usr/local/bin/start.sh
 # Utiliser root pour exécution initiale
 USER root
 
-# Exposer les ports sur lesquels Nginx et Node Exporter écoutent
-EXPOSE 80 9100
+# Exposer les ports sur lesquels Nginx, Node Exporter, Suricata et autres écoutent
+EXPOSE 80 9100 8220 9200
 
 # Définir le point d'entrée
 ENTRYPOINT ["/usr/local/bin/start.sh"]
