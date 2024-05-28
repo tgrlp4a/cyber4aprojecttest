@@ -28,6 +28,10 @@ fi
 # Libérer le port 6789 si nécessaire
 free_port 6789
 
+# Démarrer dbus
+echo "Démarrage de dbus..."
+/etc/init.d/dbus start
+
 # Démarrer l'agent Wazuh
 echo "Démarrage de l'agent Wazuh..."
 /etc/init.d/wazuh-agent start
@@ -68,6 +72,10 @@ if [ $? -ne 0 ]; then
   echo "Échec de l'enrôlement de l'agent Elastic"
   exit 1
 fi
+
+# Démarrer Node Exporter sur le port 9100 avec le collecteur logind
+echo "Démarrage de Node Exporter..."
+/usr/local/bin/node_exporter --web.listen-address=":9100" --collector.logind &
 
 # Suivre les journaux de Wazuh en arrière-plan
 tail -f /var/ossec/logs/ossec.log &
