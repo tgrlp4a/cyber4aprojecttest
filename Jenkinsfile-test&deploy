@@ -89,7 +89,7 @@ pipeline {
             sh "docker rm my_app_container"
           }
           // Déployer le nouveau conteneur
-          sh "docker run -d --name my_app_container -p 8081:80 -p 9100:9100 ${IMAGE_NAME}:${IMAGE_TAG}"
+          sh "docker run -d --name my_app_container -p 8081:80 -p 9100:9100 -p 8220:8220 -p 9200:9200 ${IMAGE_NAME}:${IMAGE_TAG}"
         }
       }
     }
