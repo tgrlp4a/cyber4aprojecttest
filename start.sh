@@ -54,7 +54,7 @@ echo "Démarrage de l'agent Elastic..."
 
 # Attendre la création de la socket de contrôle de l'agent Elastic
 echo "Attente de la création de la socket de contrôle de l'agent Elastic..."
-sleep 100
+sleep 120
 
 # Vérifier si la socket de contrôle de l'agent Elastic a été créée
 if [ ! -e /usr/share/elastic-agent/data/tmp/elastic-agent-control.sock ]; then
